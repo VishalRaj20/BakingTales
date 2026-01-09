@@ -34,6 +34,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     const [loading, setLoading] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [imageUrls, setImageUrls] = useState<string[]>(initialData?.images || [])
+    const [selectedBucket, setSelectedBucket] = useState('cake-images')
 
     const { register, control, handleSubmit, formState: { errors } } = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema) as any,
@@ -63,17 +64,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
         const file = e.target.files[0]
         const fileExt = file.name.split('.').pop()
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-        const filePath = `products/${fileName}`
+        const filePath = fileName // Fixed: Upload directly to root of bucket, no nested 'products/'
 
         try {
             const { error: uploadError } = await supabase.storage
-                .from('products') // ensure bucket exists
+                .from(selectedBucket)
                 .upload(filePath, file)
 
             if (uploadError) throw uploadError
 
             const { data: { publicUrl } } = supabase.storage
-                .from('products')
+                .from(selectedBucket)
                 .getPublicUrl(filePath)
 
             setImageUrls([...imageUrls, publicUrl])
@@ -158,8 +159,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         <select {...register('category')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                             <option value="cakes">Cakes</option>
                             <option value="pastries">Pastries</option>
-                            <option value="cupcakes">Cupcakes</option>
-                            <option value="occasions">Occasions</option>
+                            <option value="cupcakes">Cookies</option>
+                            <option value="occasions">Brownies</option>
                         </select>
                     </div>
                 </div>
@@ -180,6 +181,26 @@ export function ProductForm({ initialData }: ProductFormProps) {
                         placeholder="Birthday, Eggless, Chocolate"
                     />
                     <p className="text-xs text-muted-foreground">Used for filtering (e.g. Occasions, Dietary)</p>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Image Settings</label>
+                    <div className="p-4 border rounded-lg bg-gray-50 space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">Storage Bucket</label>
+                            <select
+                                value={selectedBucket}
+                                onChange={(e) => setSelectedBucket(e.target.value)}
+                                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <option value="cake-images">cake-images</option>
+                                <option value="pastry-images">pastry-images</option>
+                                <option value="cookie-images">cookie-images</option>
+                                <option value="Bronie-images">Bronie-images</option>
+                            </select>
+                            <p className="text-[10px] text-muted-foreground">Select where to store the uploaded image</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="space-y-2">
